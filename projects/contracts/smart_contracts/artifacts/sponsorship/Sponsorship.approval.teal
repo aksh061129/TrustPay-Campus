@@ -1,0 +1,623 @@
+#pragma version 10
+#pragma typetrack false
+
+// smart_contracts.sponsorship.contract.Sponsorship.__algopy_entrypoint_with_init() -> uint64:
+main:
+    intcblock 1 0
+    bytecblock "funded" "purpose_count" "status" "club_admin" "sponsor" 0x151f7c75 "target" "proof" "name" "open" "proved"
+    txn ApplicationID
+    bnz main_after_if_else@2
+    // smart_contracts/sponsorship/contract.py:11
+    // self.club_admin = Txn.sender
+    bytec_3 // "club_admin"
+    txn Sender
+    app_global_put
+    // smart_contracts/sponsorship/contract.py:12
+    // self.purpose_count = UInt64(0)
+    bytec_1 // "purpose_count"
+    intc_1 // 0
+    app_global_put
+
+main_after_if_else@2:
+    // smart_contracts/sponsorship/contract.py:5
+    // class Sponsorship(ARC4Contract):
+    txn NumAppArgs
+    bz main_bare_routing@11
+    pushbytess 0x69c61ff5 0x153ec068 0x556f82c3 0x6e3d5cb1 0xe0573d6c 0x75924d24 // method "createPurpose(string,uint64)uint64", method "fund_purpose(uint64,pay)void", method "submit_proof(uint64,string)void", method "release_funds(uint64,account)void", method "get_purpose(uint64)(string,uint64,uint64,address,string,string)", method "get_purpose_count()uint64"
+    txna ApplicationArgs 0
+    match main_createPurpose_route@5 main_fund_purpose_route@6 main_submit_proof_route@7 main_release_funds_route@8 main_get_purpose_route@9 main_get_purpose_count_route@10
+
+main_after_if_else@13:
+    // smart_contracts/sponsorship/contract.py:5
+    // class Sponsorship(ARC4Contract):
+    intc_1 // 0
+    return
+
+main_get_purpose_count_route@10:
+    // smart_contracts/sponsorship/contract.py:80
+    // @abimethod(readonly=True)
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    callsub get_purpose_count
+    itob
+    bytec 5 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    return
+
+main_get_purpose_route@9:
+    // smart_contracts/sponsorship/contract.py:68
+    // @abimethod(readonly=True)
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/sponsorship/contract.py:5
+    // class Sponsorship(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    // smart_contracts/sponsorship/contract.py:68
+    // @abimethod(readonly=True)
+    callsub get_purpose
+    dig 5
+    len
+    itob
+    extract 6 2
+    uncover 6
+    concat
+    uncover 5
+    itob
+    uncover 5
+    itob
+    dig 4
+    len
+    itob
+    extract 6 2
+    uncover 5
+    concat
+    dig 4
+    len
+    itob
+    extract 6 2
+    uncover 5
+    concat
+    dig 4
+    len
+    pushint 54 // 54
+    +
+    pushbytes 0x0036
+    uncover 5
+    concat
+    uncover 4
+    concat
+    uncover 5
+    concat
+    dig 1
+    itob
+    extract 6 2
+    concat
+    dig 3
+    len
+    uncover 2
+    +
+    itob
+    extract 6 2
+    concat
+    uncover 3
+    concat
+    uncover 2
+    concat
+    swap
+    concat
+    bytec 5 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    return
+
+main_release_funds_route@8:
+    // smart_contracts/sponsorship/contract.py:57
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/sponsorship/contract.py:5
+    // class Sponsorship(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    txna ApplicationArgs 2
+    btoi
+    txnas Accounts
+    // smart_contracts/sponsorship/contract.py:57
+    // @abimethod()
+    callsub release_funds
+    intc_0 // 1
+    return
+
+main_submit_proof_route@7:
+    // smart_contracts/sponsorship/contract.py:48
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/sponsorship/contract.py:5
+    // class Sponsorship(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    txna ApplicationArgs 2
+    extract 2 0
+    // smart_contracts/sponsorship/contract.py:48
+    // @abimethod()
+    callsub submit_proof
+    intc_0 // 1
+    return
+
+main_fund_purpose_route@6:
+    // smart_contracts/sponsorship/contract.py:34
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/sponsorship/contract.py:5
+    // class Sponsorship(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    txn GroupIndex
+    intc_0 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_0 // pay
+    ==
+    assert // transaction type is pay
+    // smart_contracts/sponsorship/contract.py:34
+    // @abimethod()
+    callsub fund_purpose
+    intc_0 // 1
+    return
+
+main_createPurpose_route@5:
+    // smart_contracts/sponsorship/contract.py:20
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/sponsorship/contract.py:5
+    // class Sponsorship(ARC4Contract):
+    txna ApplicationArgs 1
+    extract 2 0
+    txna ApplicationArgs 2
+    btoi
+    // smart_contracts/sponsorship/contract.py:20
+    // @abimethod()
+    callsub createPurpose
+    itob
+    bytec 5 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    return
+
+main_bare_routing@11:
+    // smart_contracts/sponsorship/contract.py:5
+    // class Sponsorship(ARC4Contract):
+    txn OnCompletion
+    bnz main_after_if_else@13
+    txn ApplicationID
+    !
+    assert // can only call when creating
+    intc_0 // 1
+    return
+
+
+// smart_contracts.sponsorship.contract.Sponsorship.createPurpose(name: bytes, target: uint64) -> uint64:
+createPurpose:
+    // smart_contracts/sponsorship/contract.py:20-21
+    // @abimethod()
+    // def createPurpose(self, name: String, target: UInt64) -> UInt64:
+    proto 2 1
+    // smart_contracts/sponsorship/contract.py:23
+    // assert Txn.sender == self.club_admin, "Only club admin can create purpose"
+    txn Sender
+    intc_1 // 0
+    bytec_3 // "club_admin"
+    app_global_get_ex
+    assert // check self.club_admin exists
+    ==
+    assert // Only club admin can create purpose
+    // smart_contracts/sponsorship/contract.py:24
+    // purpose_id = self.purpose_count
+    intc_1 // 0
+    bytec_1 // "purpose_count"
+    app_global_get_ex
+    assert // check self.purpose_count exists
+    // smart_contracts/sponsorship/contract.py:25
+    // self.purpose_count += 1
+    intc_1 // 0
+    bytec_1 // "purpose_count"
+    app_global_get_ex
+    assert // check self.purpose_count exists
+    intc_0 // 1
+    +
+    bytec_1 // "purpose_count"
+    swap
+    app_global_put
+    // smart_contracts/sponsorship/contract.py:26
+    // self.purpose_names[purpose_id] = name
+    dup
+    itob
+    bytec 8 // "name"
+    dig 1
+    concat
+    dup
+    box_del
+    pop
+    frame_dig -2
+    box_put
+    // smart_contracts/sponsorship/contract.py:27
+    // self.purpose_targets[purpose_id] = target
+    bytec 6 // "target"
+    dig 1
+    concat
+    frame_dig -1
+    itob
+    box_put
+    // smart_contracts/sponsorship/contract.py:28
+    // self.purpose_funded_amounts[purpose_id] = UInt64(0)
+    bytec_0 // "funded"
+    dig 1
+    concat
+    intc_1 // 0
+    itob
+    box_put
+    // smart_contracts/sponsorship/contract.py:29
+    // self.purpose_sponsors[purpose_id] = Account()
+    bytec 4 // "sponsor"
+    dig 1
+    concat
+    global ZeroAddress
+    box_put
+    // smart_contracts/sponsorship/contract.py:30
+    // self.purpose_proof_hashes[purpose_id] = String("")
+    bytec 7 // "proof"
+    dig 1
+    concat
+    dup
+    box_del
+    pop
+    pushbytes ""
+    box_put
+    // smart_contracts/sponsorship/contract.py:31
+    // self.purpose_statuses[purpose_id] = String("open")
+    bytec_2 // "status"
+    swap
+    concat
+    dup
+    box_del
+    pop
+    bytec 9 // "open"
+    box_put
+    // smart_contracts/sponsorship/contract.py:32
+    // return purpose_id
+    retsub
+
+
+// smart_contracts.sponsorship.contract.Sponsorship.fund_purpose(purpose_id: uint64, pay_txn: uint64) -> void:
+fund_purpose:
+    // smart_contracts/sponsorship/contract.py:34-35
+    // @abimethod()
+    // def fund_purpose(self, purpose_id: UInt64, pay_txn: gtxn.PaymentTransaction) -> None:
+    proto 2 0
+    // smart_contracts/sponsorship/contract.py:37
+    // status = self.purpose_statuses[purpose_id]
+    frame_dig -2
+    itob
+    bytec_2 // "status"
+    dig 1
+    concat
+    dup
+    cover 2
+    box_get
+    assert // check self.purpose_statuses entry exists
+    // smart_contracts/sponsorship/contract.py:38
+    // assert status == String("open"), "Purpose not open for funding"
+    bytec 9 // "open"
+    ==
+    assert // Purpose not open for funding
+    // smart_contracts/sponsorship/contract.py:39
+    // assert pay_txn.receiver == Global.current_application_address, "Payment must be to app address"
+    frame_dig -1
+    gtxns Receiver
+    global CurrentApplicationAddress
+    ==
+    assert // Payment must be to app address
+    // smart_contracts/sponsorship/contract.py:40
+    // assert pay_txn.amount > 0, "Amount must be positive"
+    frame_dig -1
+    gtxns Amount
+    dup
+    assert // Amount must be positive
+    // smart_contracts/sponsorship/contract.py:41
+    // funded = self.purpose_funded_amounts[purpose_id]
+    bytec_0 // "funded"
+    dig 2
+    concat
+    dup
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.purpose_funded_amounts entry exists
+    // smart_contracts/sponsorship/contract.py:42
+    // funded += pay_txn.amount
+    uncover 2
+    +
+    // smart_contracts/sponsorship/contract.py:43
+    // self.purpose_funded_amounts[purpose_id] = funded
+    dup
+    itob
+    uncover 2
+    swap
+    box_put
+    // smart_contracts/sponsorship/contract.py:44
+    // self.purpose_sponsors[purpose_id] = pay_txn.sender
+    bytec 4 // "sponsor"
+    dig 2
+    concat
+    frame_dig -1
+    gtxns Sender
+    box_put
+    // smart_contracts/sponsorship/contract.py:45
+    // if funded >= self.purpose_targets[purpose_id]:
+    bytec 6 // "target"
+    uncover 2
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.purpose_targets entry exists
+    >=
+    bz fund_purpose_after_if_else@2
+    // smart_contracts/sponsorship/contract.py:46
+    // self.purpose_statuses[purpose_id] = String("funded")
+    frame_dig 0
+    dup
+    box_del
+    pop
+    bytec_0 // "funded"
+    box_put
+
+fund_purpose_after_if_else@2:
+    retsub
+
+
+// smart_contracts.sponsorship.contract.Sponsorship.submit_proof(purpose_id: uint64, proof_hash: bytes) -> void:
+submit_proof:
+    // smart_contracts/sponsorship/contract.py:48-49
+    // @abimethod()
+    // def submit_proof(self, purpose_id: UInt64, proof_hash: String) -> None:
+    proto 2 0
+    // smart_contracts/sponsorship/contract.py:51
+    // assert Txn.sender == self.club_admin, "Only club admin can submit proof"
+    txn Sender
+    intc_1 // 0
+    bytec_3 // "club_admin"
+    app_global_get_ex
+    assert // check self.club_admin exists
+    ==
+    assert // Only club admin can submit proof
+    // smart_contracts/sponsorship/contract.py:52
+    // status = self.purpose_statuses[purpose_id]
+    frame_dig -2
+    itob
+    bytec_2 // "status"
+    dig 1
+    concat
+    dup
+    box_get
+    assert // check self.purpose_statuses entry exists
+    // smart_contracts/sponsorship/contract.py:53
+    // assert status == String("funded"), "Purpose not funded"
+    bytec_0 // "funded"
+    ==
+    assert // Purpose not funded
+    // smart_contracts/sponsorship/contract.py:54
+    // self.purpose_proof_hashes[purpose_id] = proof_hash
+    bytec 7 // "proof"
+    uncover 2
+    concat
+    dup
+    box_del
+    pop
+    frame_dig -1
+    box_put
+    // smart_contracts/sponsorship/contract.py:55
+    // self.purpose_statuses[purpose_id] = String("proved")
+    dup
+    box_del
+    pop
+    bytec 10 // "proved"
+    box_put
+    retsub
+
+
+// smart_contracts.sponsorship.contract.Sponsorship.release_funds(purpose_id: uint64, receiver: bytes) -> void:
+release_funds:
+    // smart_contracts/sponsorship/contract.py:57-58
+    // @abimethod()
+    // def release_funds(self, purpose_id: UInt64, receiver: Account) -> None:
+    proto 2 0
+    // smart_contracts/sponsorship/contract.py:60
+    // status = self.purpose_statuses[purpose_id]
+    frame_dig -2
+    itob
+    dup
+    bytec_2 // "status"
+    dig 1
+    concat
+    dup
+    cover 2
+    box_get
+    assert // check self.purpose_statuses entry exists
+    // smart_contracts/sponsorship/contract.py:61
+    // assert status == String("proved"), "Proof not submitted"
+    bytec 10 // "proved"
+    ==
+    assert // Proof not submitted
+    // smart_contracts/sponsorship/contract.py:62
+    // sponsor = self.purpose_sponsors[purpose_id]
+    bytec 4 // "sponsor"
+    swap
+    concat
+    box_get
+    assert // check self.purpose_sponsors entry exists
+    // smart_contracts/sponsorship/contract.py:63
+    // assert Txn.sender == sponsor or Txn.sender == self.club_admin, "Only sponsor or admin can release"
+    txn Sender
+    ==
+    bnz release_funds_bool_true@2
+    txn Sender
+    intc_1 // 0
+    bytec_3 // "club_admin"
+    app_global_get_ex
+    assert // check self.club_admin exists
+    ==
+    bz release_funds_bool_false@3
+
+release_funds_bool_true@2:
+    intc_0 // 1
+
+release_funds_bool_merge@4:
+    // smart_contracts/sponsorship/contract.py:63
+    // assert Txn.sender == sponsor or Txn.sender == self.club_admin, "Only sponsor or admin can release"
+    assert // Only sponsor or admin can release
+    // smart_contracts/sponsorship/contract.py:64
+    // amount = self.purpose_funded_amounts[purpose_id]
+    bytec_0 // "funded"
+    frame_dig 0
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.purpose_funded_amounts entry exists
+    // smart_contracts/sponsorship/contract.py:65
+    // itxn.Payment(receiver=receiver, amount=amount, fee=0).submit()
+    itxn_begin
+    itxn_field Amount
+    frame_dig -1
+    itxn_field Receiver
+    intc_0 // pay
+    itxn_field TypeEnum
+    intc_1 // 0
+    itxn_field Fee
+    itxn_submit
+    // smart_contracts/sponsorship/contract.py:66
+    // self.purpose_statuses[purpose_id] = String("released")
+    frame_dig 1
+    dup
+    box_del
+    pop
+    pushbytes "released"
+    box_put
+    retsub
+
+release_funds_bool_false@3:
+    intc_1 // 0
+    b release_funds_bool_merge@4
+
+
+// smart_contracts.sponsorship.contract.Sponsorship.get_purpose(purpose_id: uint64) -> bytes, uint64, uint64, bytes, bytes, bytes:
+get_purpose:
+    // smart_contracts/sponsorship/contract.py:68-69
+    // @abimethod(readonly=True)
+    // def get_purpose(self, purpose_id: UInt64) -> tuple[String, UInt64, UInt64, Account, String, String]:
+    proto 1 6
+    // smart_contracts/sponsorship/contract.py:72
+    // self.purpose_names[purpose_id],
+    frame_dig -1
+    itob
+    bytec 8 // "name"
+    dig 1
+    concat
+    box_get
+    assert // check self.purpose_names entry exists
+    // smart_contracts/sponsorship/contract.py:73
+    // self.purpose_targets[purpose_id],
+    bytec 6 // "target"
+    dig 2
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.purpose_targets entry exists
+    // smart_contracts/sponsorship/contract.py:74
+    // self.purpose_funded_amounts[purpose_id],
+    bytec_0 // "funded"
+    dig 3
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.purpose_funded_amounts entry exists
+    // smart_contracts/sponsorship/contract.py:75
+    // self.purpose_sponsors[purpose_id],
+    bytec 4 // "sponsor"
+    dig 4
+    concat
+    box_get
+    assert // check self.purpose_sponsors entry exists
+    // smart_contracts/sponsorship/contract.py:76
+    // self.purpose_proof_hashes[purpose_id],  # ← Proof can be viewed here
+    bytec 7 // "proof"
+    dig 5
+    concat
+    box_get
+    assert // check self.purpose_proof_hashes entry exists
+    // smart_contracts/sponsorship/contract.py:77
+    // self.purpose_statuses[purpose_id]
+    bytec_2 // "status"
+    uncover 6
+    concat
+    box_get
+    assert // check self.purpose_statuses entry exists
+    // smart_contracts/sponsorship/contract.py:71-78
+    // return (
+    //     self.purpose_names[purpose_id],
+    //     self.purpose_targets[purpose_id],
+    //     self.purpose_funded_amounts[purpose_id],
+    //     self.purpose_sponsors[purpose_id],
+    //     self.purpose_proof_hashes[purpose_id],  # ← Proof can be viewed here
+    //     self.purpose_statuses[purpose_id]
+    // )
+    retsub
+
+
+// smart_contracts.sponsorship.contract.Sponsorship.get_purpose_count() -> uint64:
+get_purpose_count:
+    // smart_contracts/sponsorship/contract.py:83
+    // return self.purpose_count
+    intc_1 // 0
+    bytec_1 // "purpose_count"
+    app_global_get_ex
+    assert // check self.purpose_count exists
+    retsub

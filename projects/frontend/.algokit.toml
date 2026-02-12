@@ -10,3 +10,7 @@ artifacts = "src/contracts"
 build = { commands = ['pnpm run build'], description = 'Build frontend' }
 test = { commands = ['pnpm run test'], description = 'Run frontend tests' }
 lint = { commands = ['pnpm run lint'], description = 'Lint frontend code' }
+
+[project.deploy.testnet]
+command = "poetry run python -m smart_contracts deploy"
+environment = "testnet"

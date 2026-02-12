@@ -1,0 +1,5 @@
+ALGOD_SERVER=https://testnet-api.algonode.cloud
+ALGOD_TOKEN=
+INDEXER_SERVER=https://testnet-idx.algonode.cloud
+
+DEPLOYER_MNEMONIC="gym panther crash honey dilemma energy join gorilla such video prison please stable pool industry repeat enjoy find setup used punch oval base tail"

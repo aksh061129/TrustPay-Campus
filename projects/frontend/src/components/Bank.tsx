@@ -215,12 +215,12 @@ const Bank = ({ openModal, closeModal }: BankProps) => {
         defaultSigner: transactionSigner 
       })
       
-      const res = await client.send.deposit({ 
-        args: { 
-          memo: memo || '', 
-          payTxn: { txn: payTxn, signer: transactionSigner } 
-        }, 
-        sender: activeAddress 
+      const res = await client.send.deposit({
+        args: {
+          memo: memo || '',
+          payTxn: { txn: payTxn, signer: transactionSigner }
+        },
+        sender: activeAddress
       })
       
       const confirmedRound = (res.confirmation as any)?.['confirmed-round']

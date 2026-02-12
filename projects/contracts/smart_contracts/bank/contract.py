@@ -1,5 +1,6 @@
 from algopy import *
 from algopy.arc4 import abimethod
+from algopy import TransactionType
 
 
 class Bank(ARC4Contract):
@@ -11,19 +12,21 @@ class Bank(ARC4Contract):
         self.total_deposit = UInt64(0)
 
     @abimethod()
-    def deposit(self, memo: String, pay_txn: gtxn.PaymentTransaction) -> UInt64:
+    def deposit(self, memo: String, pay_txn_index: UInt64) -> UInt64:
         """Accepts a payment into the app escrow and records sender's deposited balance"""
-        assert pay_txn.receiver == Global.current_application_address, "Receiver must be the contract address"
-        assert pay_txn.amount > 0, "Deposit amount must be greater than zero"
+        payment = gtxn[pay_txn_index]  # type: ignore
+        assert payment.type_enum == TransactionType.Payment, "Transaction must be a payment"  # type: ignore
+        assert payment.receiver == Global.current_application_address, "Receiver must be the contract address"  # type: ignore
+        assert payment.amount > 0, "Deposit amount must be greater than zero"  # type: ignore
 
-        amount, exists = self.deposits.maybe(pay_txn.sender)
+        amount, exists = self.deposits.maybe(payment.sender)  # type: ignore
         if exists:
-            self.deposits[pay_txn.sender] = amount + pay_txn.amount
+            self.deposits[payment.sender] = amount + payment.amount  # type: ignore
         else:
-            self.deposits[pay_txn.sender] = pay_txn.amount
+            self.deposits[payment.sender] = payment.amount  # type: ignore
 
-        self.total_deposit += pay_txn.amount
-        return self.deposits[pay_txn.sender]
+        self.total_deposit += payment.amount  # type: ignore
+        return self.deposits[payment.sender]  # type: ignore
 
     @abimethod()
     def withdraw(self, amount: UInt64) -> UInt64:
