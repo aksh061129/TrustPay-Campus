@@ -50,8 +50,12 @@ export default function App() {
   return (
     <SnackbarProvider maxSnack={3}>
       <WalletProvider manager={walletManager}>
-        <Home />
+        <div className="bg-base-100 text-base-content">
+          <Home />
+        </div>
       </WalletProvider>
     </SnackbarProvider>
   )
 }
+
+

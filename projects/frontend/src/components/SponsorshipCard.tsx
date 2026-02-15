@@ -21,6 +21,17 @@ interface Purpose {
   status: string
 }
 
+function parseIdToBigInt(value: string): bigint | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const normalized = trimmed.replace(/^[pP]/, '')
+  if (!/^\d+$/.test(normalized)) return null
+
+  const parsed = BigInt(normalized)
+  return parsed > 0n ? parsed : null
+}
+
 const SponsorshipCard: React.FC<SponsorshipCardProps> = ({ appId, role, algorand }) => {
   const [purposes, setPurposes] = useState<Purpose[]>([])
   const [loading, setLoading] = useState(false)
@@ -63,11 +74,18 @@ const SponsorshipCard: React.FC<SponsorshipCardProps> = ({ appId, role, algorand
     setLoading(true)
     setError('')
     try {
+      const parsedAppId = parseIdToBigInt(appId)
+      if (!parsedAppId) {
+        setError('Invalid App ID. Use formats like 1 or p1.')
+        setLoading(false)
+        return
+      }
+
       const factory = new SponsorshipFactory({
         defaultSender: activeAddress ?? undefined,
         algorand: algorand,
       })
-      const appClient = factory.getAppClientById({ appId: BigInt(appId) })
+      const appClient = factory.getAppClientById({ appId: parsedAppId })
 
       // Check if admin
       const clubAdmin = await appClient.state.global.clubAdmin()
@@ -136,11 +154,18 @@ const SponsorshipCard: React.FC<SponsorshipCardProps> = ({ appId, role, algorand
     setLoading(true)
     setError('')
     try {
+      const parsedAppId = parseIdToBigInt(appId)
+      if (!parsedAppId) {
+        setError('Invalid App ID. Use formats like 1 or p1.')
+        setLoading(false)
+        return
+      }
+
       const factory = new SponsorshipFactory({
         defaultSender: activeAddress ?? undefined,
         algorand: algorand,
       })
-      const appClient = factory.getAppClientById({ appId: BigInt(appId) })
+      const appClient = factory.getAppClientById({ appId: parsedAppId })
 
       // Create box name for the purpose
       const boxName = `proof${purposeId}`

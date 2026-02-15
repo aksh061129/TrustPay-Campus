@@ -1,9 +1,6 @@
-// src/components/Home.tsx
-import { useWallet } from '@txnlab/use-wallet-react'
-import React, { useState, useMemo, useEffect } from 'react'
+﻿import { useWallet } from '@txnlab/use-wallet-react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import algosdk from 'algosdk'
-import { BankFactory } from './contracts/Bank'
 import { SponsorshipFactory } from './contracts/Sponsorship'
 import { getAlgodConfigFromViteEnvironment, getIndexerConfigFromViteEnvironment } from './utils/network/getAlgoClientConfigs'
 import ConnectWallet from './components/ConnectWallet'
@@ -16,8 +13,22 @@ import Bank from './components/Bank'
 import Sponsorship from './components/Sponsorship'
 import GroupExpense from './components/GroupExpense'
 import ClubExit from './components/ClubExit'
+import Navbar from './components/ui/Navbar'
+import Sidebar from './components/ui/Sidebar'
+import FeatureCard from './components/ui/FeatureCard'
 
 interface HomeProps {}
+
+interface FeatureItem {
+  id: string
+  title: string
+  description: string
+  category: string
+  requiresWallet?: boolean
+  actionLabel?: string
+  testId?: string
+  onOpen: () => void | Promise<void>
+}
 
 const Home: React.FC<HomeProps> = () => {
   const [openWalletModal, setOpenWalletModal] = useState<boolean>(false)
@@ -32,6 +43,8 @@ const Home: React.FC<HomeProps> = () => {
   const [clubExitModal, setClubExitModal] = useState<boolean>(false)
   const [role, setRole] = useState<string>('Member')
   const [deployedAppId, setDeployedAppId] = useState<string>('')
+  const [selectedFeatureId, setSelectedFeatureId] = useState<string>('send-algo')
+
   const { activeAddress, transactionSigner } = useWallet()
   const algodConfig = getAlgodConfigFromViteEnvironment()
   const indexerConfig = getIndexerConfigFromViteEnvironment()
@@ -49,7 +62,6 @@ const Home: React.FC<HomeProps> = () => {
     setAppCallsDemoModal(!appCallsDemoModal)
   }
 
-  // ✅ DEPLOY SPONSORSHIP SMART CONTRACT
   const deployApp = async () => {
     try {
       if (!activeAddress) {
@@ -57,222 +69,231 @@ const Home: React.FC<HomeProps> = () => {
         return
       }
 
-      alert('🚀 Deploying Sponsorship contract...')
+      alert('Deploying Sponsorship contract...')
 
       const factory = new SponsorshipFactory({
         defaultSender: activeAddress,
-        algorand: algorand,
+        algorand,
       })
 
-      const { appClient } = await factory.deploy()
+      const { appClient } = await factory.deploy({
+        onUpdate: 'append',
+        onSchemaBreak: 'append',
+      })
       const appId = appClient.appId.toString()
 
       setDeployedAppId(appId)
-      alert(`✅ Deployment successful! App ID: ${appId}`)
+      alert(`Deployment successful. App ID: ${appId}`)
     } catch (err: any) {
       console.error(err)
-      alert(`❌ Deploy failed: ${err.message ?? err}`)
+      alert(`Deploy failed: ${err.message ?? err}`)
     }
   }
 
+  const features: FeatureItem[] = [
+    {
+      id: 'send-algo',
+      title: 'Send Algo',
+      description: 'Send a payment transaction to any address.',
+      category: 'Payments',
+      requiresWallet: true,
+      onOpen: () => setSendAlgoModal(true),
+    },
+    {
+      id: 'mint-nft',
+      title: 'Mint NFT (ARC-3)',
+      description: 'Upload metadata to IPFS and mint a single NFT.',
+      category: 'Assets',
+      requiresWallet: true,
+      onOpen: () => setMintNftModal(true),
+    },
+    {
+      id: 'create-asa',
+      title: 'Create Token (ASA)',
+      description: 'Mint a fungible ASA with custom supply and decimals.',
+      category: 'Assets',
+      requiresWallet: true,
+      onOpen: () => setCreateAsaModal(true),
+    },
+    {
+      id: 'asset-opt-in',
+      title: 'Asset Opt-In',
+      description: 'Opt-in to any existing ASA to receive tokens.',
+      category: 'Assets',
+      requiresWallet: true,
+      onOpen: () => setAssetOptInModal(true),
+    },
+    {
+      id: 'counter',
+      title: 'Counter App',
+      description: 'Interact with the shared on-chain counter app.',
+      category: 'Contracts',
+      requiresWallet: true,
+      testId: 'appcalls-demo',
+      onOpen: toggleAppCallsModal,
+    },
+    {
+      id: 'bank',
+      title: 'Bank Module',
+      description: 'Deposit, withdraw, and view account statements.',
+      category: 'Finance',
+      requiresWallet: true,
+      onOpen: () => setBankModal(true),
+    },
+    {
+      id: 'sponsorship',
+      title: 'Conditional Sponsorship',
+      description: 'Create, fund, prove, and release purpose-locked support.',
+      category: 'Finance',
+      requiresWallet: true,
+      onOpen: () => setSponsorshipModal(true),
+    },
+    {
+      id: 'group-expense',
+      title: 'Group Expense Locker',
+      description: 'Pay-first group expense splitting flow.',
+      category: 'Clubs',
+      requiresWallet: true,
+      onOpen: () => setGroupExpenseModal(true),
+    },
+    {
+      id: 'club-exit',
+      title: 'Club Exit & Handover',
+      description: 'Manage leadership transfer and role handover.',
+      category: 'Clubs',
+      requiresWallet: true,
+      onOpen: () => setClubExitModal(true),
+    },
+    {
+      id: 'deploy-sponsorship',
+      title: 'Deploy Sponsorship Contract',
+      description: 'Deploy a new sponsorship app and capture its App ID.',
+      category: 'Admin',
+      requiresWallet: true,
+      actionLabel: 'Deploy',
+      onOpen: deployApp,
+    },
+  ]
+
+  const selectedFeature = features.find((feature) => feature.id === selectedFeatureId) ?? features[0]
+
+  const handleOpenSelected = () => {
+    void selectedFeature.onOpen()
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
-        <div className="absolute top-0 -right-4 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse animation-delay-4000"></div>
+    <div className="dashboard-bg min-h-screen text-slate-100">
+      <div className="dashboard-orb dashboard-orb-1" />
+      <div className="dashboard-orb dashboard-orb-2" />
+      <div className="dashboard-orb dashboard-orb-3" />
+
+      <Navbar
+        appName="TrustPay Campus"
+        network={algodConfig.network}
+        activeAddress={activeAddress}
+        onConnectWallet={toggleWalletModal}
+      />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 pb-6 pt-4 lg:grid lg:grid-cols-[260px,1fr,320px]">
+        <aside className="glass-card rounded-2xl p-3 shadow-xl">
+          <Sidebar
+            items={features.map((feature) => ({
+              id: feature.id,
+              label: feature.title,
+              category: feature.category,
+            }))}
+            selectedId={selectedFeature.id}
+            onSelect={setSelectedFeatureId}
+          />
+        </aside>
+
+        <main className="space-y-4">
+          <section className="glass-card rounded-2xl p-6 shadow-xl">
+            <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">Feature Overview</p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">{selectedFeature.title}</h2>
+            <p className="mt-3 max-w-3xl text-sm text-slate-200/90">{selectedFeature.description}</p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                data-test-id={selectedFeature.testId}
+                className="btn border-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 text-white hover:from-cyan-500 hover:to-indigo-600"
+                disabled={Boolean(selectedFeature.requiresWallet && !activeAddress)}
+                onClick={handleOpenSelected}
+              >
+                {selectedFeature.actionLabel ?? 'Open'}
+              </button>
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-slate-100">
+                Category: {selectedFeature.category}
+              </span>
+              {!activeAddress && selectedFeature.requiresWallet ? (
+                <span className="text-xs text-amber-200">Connect wallet to continue.</span>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {features.map((feature) => (
+              <FeatureCard
+                key={feature.id}
+                title={feature.title}
+                description={feature.description}
+                category={feature.category}
+                disabled={Boolean(feature.requiresWallet && !activeAddress)}
+                actionLabel={feature.actionLabel ?? 'Open'}
+                testId={feature.testId}
+                onOpen={() => {
+                  setSelectedFeatureId(feature.id)
+                  void feature.onOpen()
+                }}
+              />
+            ))}
+          </section>
+        </main>
+
+        <aside className="glass-card space-y-4 rounded-2xl p-5 shadow-xl">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">Workspace Controls</h3>
+            <p className="mt-2 text-sm text-slate-200/90">Select role and sponsorship App ID used by modules.</p>
+          </div>
+
+          <label className="form-control w-full">
+            <span className="mb-2 text-xs uppercase tracking-wide text-slate-200">Role</span>
+            <select
+              value={role}
+              onChange={(event) => setRole(event.target.value)}
+              className="select select-bordered w-full border-white/20 bg-slate-900/70 text-slate-100"
+            >
+              <option value="Member">Student</option>
+              <option value="Sponsor">Club</option>
+              <option value="Club Admin">Admin</option>
+            </select>
+          </label>
+
+          <label className="form-control w-full">
+            <span className="mb-2 text-xs uppercase tracking-wide text-slate-200">Sponsorship App ID</span>
+            <input
+              type="text"
+              value={deployedAppId}
+              onChange={(event) => setDeployedAppId(event.target.value)}
+              placeholder="Enter existing or deployed app ID"
+              className="input input-bordered w-full border-white/20 bg-slate-900/70 text-slate-100"
+            />
+          </label>
+
+          <button
+            className="btn w-full border-0 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white hover:from-amber-500 hover:to-red-600"
+            disabled={!activeAddress}
+            onClick={() => void deployApp()}
+          >
+            Deploy Sponsorship App
+          </button>
+
+          <div className="rounded-xl border border-white/20 bg-slate-950/70 p-3 text-xs text-slate-200">
+            <p>Wallet: {activeAddress ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}` : 'Not connected'}</p>
+            <p className="mt-1">Network: {algodConfig.network}</p>
+            <p className="mt-1">App ID: {deployedAppId || 'Not set'}</p>
+          </div>
+        </aside>
       </div>
-
-      {/* Professional Header */}
-      <header className="relative z-10 p-6">
-        <div className="flex justify-center items-center">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-professional">
-              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.84L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.84l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white professional-font">Algorand Workshop</h1>
-              <p className="text-cyan-200 text-sm">Smart Contract Platform</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="relative z-10 flex items-center justify-center min-h-[calc(100vh-120px)] px-4">
-        <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 shadow-professional border border-white/20 max-w-7xl w-full">
-          <div className="text-center mb-12">
-            <h2 className="text-5xl font-extrabold text-white mb-4 professional-font text-gradient">
-              Algorand Operations Hub
-            </h2>
-            <p className="text-xl text-gray-300 professional-font">
-              Comprehensive blockchain operations in one unified platform
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Wallet Controls Section */}
-            <div className="card bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-xl">
-              <div className="card-body text-center">
-                <h2 className="card-title justify-center">Wallet & Role</h2>
-                <div className="flex flex-col items-center space-y-4">
-                  <button
-                    data-test-id="connect-wallet"
-                    className={`btn px-6 py-3 text-sm font-semibold rounded-full shadow-professional shadow-hover transition-all duration-300 ${
-                      activeAddress
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
-                        : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600'
-                    }`}
-                    onClick={toggleWalletModal}
-                  >
-                    {activeAddress ? 'Wallet Connected' : 'Connect Wallet'}
-                  </button>
-                  {activeAddress && (
-                    <div className="w-full max-w-xs space-y-3">
-                      <div className="flex flex-col space-y-1">
-                        <label className="text-xs font-medium text-gray-300 uppercase tracking-wide">Wallet Address</label>
-                        <div className="text-sm text-white bg-white/10 backdrop-blur-sm px-3 py-2 rounded-lg border border-white/20 font-mono">
-                          {activeAddress.slice(0, 6)}...{activeAddress.slice(-4)}
-                        </div>
-                      </div>
-                      <div className="flex flex-col space-y-1">
-                        <label className="text-xs font-medium text-gray-300 uppercase tracking-wide">Role</label>
-                        <select
-                          value={role}
-                          onChange={(e) => setRole(e.target.value)}
-                          className="text-sm bg-white/10 backdrop-blur-sm text-white px-3 py-2 rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
-                        >
-                          <option value="Member" className="text-gray-900">Member</option>
-                          <option value="Sponsor" className="text-gray-900">Sponsor</option>
-                          <option value="Club Admin" className="text-gray-900">Club Admin</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="card bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title">Send Algo</h2>
-                <p>Send a payment transaction to any address.</p>
-                <div className="card-actions justify-end">
-                  <button className="btn btn-outline" disabled={!activeAddress} onClick={() => setSendAlgoModal(true)}>Open</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="card bg-gradient-to-br from-fuchsia-500 to-pink-500 text-white shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title">Mint NFT (ARC-3)</h2>
-                <p>Upload to IPFS via Pinata and mint a single NFT.</p>
-                <div className="card-actions justify-end">
-                  <button className="btn btn-outline" disabled={!activeAddress} onClick={() => setMintNftModal(true)}>Open</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="card bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title">Create Token (ASA)</h2>
-                <p>Mint a fungible ASA with custom supply and decimals.</p>
-                <div className="card-actions justify-end">
-                  <button className="btn btn-outline" disabled={!activeAddress} onClick={() => setCreateAsaModal(true)}>Open</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="card bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title">Asset Opt-In</h2>
-                <p>Opt-in to any existing ASA to receive tokens.</p>
-                <div className="card-actions justify-end">
-                  <button className="btn btn-outline" disabled={!activeAddress} onClick={() => setAssetOptInModal(true)}>Open</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="card bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-xl md:col-span-2 lg:col-span-1">
-              <div className="card-body">
-                <h2 className="card-title">Counter (App ID 747652603)</h2>
-                <p>Interact with the shared on-chain counter app.</p>
-                <div className="card-actions justify-end">
-                  <button
-                    data-test-id="appcalls-demo"
-                    className="btn btn-outline"
-                    disabled={!activeAddress}
-                    onClick={toggleAppCallsModal}
-                  >
-                    Open
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="card bg-gradient-to-br from-rose-500 to-red-500 text-white shadow-xl md:col-span-2 lg:col-span-1">
-              <div className="card-body">
-                <h2 className="card-title">Bank</h2>
-                <p>Deposit and withdraw ALGOs and view statements.</p>
-                <div className="card-actions justify-end">
-                  <button className="btn btn-outline" disabled={!activeAddress} onClick={() => setBankModal(true)}>Open</button>
-                </div>
-              </div>
-            </div>
-
-            {/* ✅ SPONSORSHIP CARD */}
-            <div className="card bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title">Conditional Sponsorship</h2>
-                <p>Purpose-locked funding: Create → Fund → Prove → Release</p>
-                <div className="card-actions justify-end">
-                  <button className="btn btn-outline" disabled={!activeAddress} onClick={() => setSponsorshipModal(true)}>Open</button>
-                </div>
-              </div>
-            </div>
-
-            {/* ✅ GROUP EXPENSE CARD */}
-            <div className="card bg-gradient-to-br from-yellow-500 to-orange-500 text-white shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title">Pay-First Group Expense Locker</h2>
-                <p>Group Expense Spliter</p>
-                <div className="card-actions justify-end">
-                  <button className="btn btn-outline" disabled={!activeAddress} onClick={() => setGroupExpenseModal(true)}>Open</button>
-                </div>
-              </div>
-            </div>
-
-            {/* ✅ CLUB EXIT CARD */}
-            <div className="card bg-gradient-to-br from-red-500 to-pink-500 text-white shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title">Club Exit & Handover System</h2>
-                <p>Adapt Leadership Changes</p>
-                <div className="card-actions justify-end">
-                  <button className="btn btn-outline" disabled={!activeAddress} onClick={() => setClubExitModal(true)}>Open</button>
-                </div>
-              </div>
-            </div>
-
-            {/* ✅ DEPLOY APP CARD */}
-            <div className="card bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title">Deploy Smart Contract</h2>
-                <p>Approve deployment using Pera Wallet</p>
-                {deployedAppId && (
-                  <p className="text-sm">Deployed App ID: {deployedAppId}</p>
-                )}
-                <div className="card-actions justify-end">
-                  <button className="btn btn-outline" disabled={!activeAddress} onClick={deployApp}>
-                    Deploy
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
 
       <ConnectWallet openModal={openWalletModal} closeModal={toggleWalletModal} />
       <AppCalls openModal={appCallsDemoModal} setModalState={setAppCallsDemoModal} />
@@ -289,3 +310,4 @@ const Home: React.FC<HomeProps> = () => {
 }
 
 export default Home
+

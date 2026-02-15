@@ -14,6 +14,29 @@ interface SponsorshipProps {
   appId?: string
 }
 
+const MICROALGOS_PER_ALGO = 1_000_000
+
+function algoToMicroBigInt(value: string): bigint | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (!/^\d+(\.\d+)?$/.test(trimmed)) return null
+
+  const converted = Math.round(Number(trimmed) * MICROALGOS_PER_ALGO)
+  if (!Number.isFinite(converted) || !Number.isSafeInteger(converted) || converted <= 0) return null
+  return BigInt(converted)
+}
+
+function parseIdToBigInt(value: string): bigint | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const normalized = trimmed.replace(/^[pP]/, '')
+  if (!/^\d+$/.test(normalized)) return null
+
+  const parsed = BigInt(normalized)
+  return parsed > 0n ? parsed : null
+}
+
 const Sponsorship: React.FC<SponsorshipProps> = ({ openModal, closeModal, role, appId: propAppId }) => {
   const [purposeName, setPurposeName] = useState('')
   const [targetAmount, setTargetAmount] = useState('')
@@ -46,15 +69,23 @@ const Sponsorship: React.FC<SponsorshipProps> = ({ openModal, closeModal, role, 
     }
     setLoading(true)
     try {
+      const parsedAppId = parseIdToBigInt(appId)
+      const targetMicroAlgos = algoToMicroBigInt(targetAmount)
+      if (!parsedAppId || !targetMicroAlgos) {
+        alert('Enter a valid App ID and target amount in ALGO (e.g., 0.1)')
+        setLoading(false)
+        return
+      }
+
       const factory = new SponsorshipFactory({
         defaultSender: activeAddress ?? undefined,
         algorand: algorand,
       })
-      const appClient = factory.getAppClientById({ appId: BigInt(appId) })
+      const appClient = factory.getAppClientById({ appId: parsedAppId })
       const result = await appClient.send.createPurpose({
         args: {
           name: purposeName,
-          target: BigInt(targetAmount),
+          target: targetMicroAlgos,
         },
       })
       if (result.return !== undefined) {
@@ -80,22 +111,31 @@ const Sponsorship: React.FC<SponsorshipProps> = ({ openModal, closeModal, role, 
     }
     setLoading(true)
     try {
+      const parsedAppId = parseIdToBigInt(appId)
+      const parsedPurposeId = parseIdToBigInt(purposeId)
+      const amountMicroAlgos = algoToMicroBigInt(targetAmount)
+      if (!parsedAppId || !parsedPurposeId || !amountMicroAlgos) {
+        alert('Enter valid App ID, Purpose ID, and ALGO amount (e.g., 0.1)')
+        setLoading(false)
+        return
+      }
+
       const factory = new SponsorshipFactory({
         defaultSender: activeAddress ?? undefined,
         algorand: algorand,
       })
-      const appClient = factory.getAppClientById({ appId: BigInt(appId) })
+      const appClient = factory.getAppClientById({ appId: parsedAppId })
 
       // Create a payment transaction to the app address
       const payTxn = await algorand.createTransaction.payment({
         sender: activeAddress,
         receiver: appClient.appAddress,
-        amount: algokit.microAlgos(BigInt(targetAmount)),
+        amount: algokit.microAlgos(amountMicroAlgos),
       })
 
       const result = await appClient.send.fundPurpose({
         args: {
-          purposeId: BigInt(purposeId),
+          purposeId: parsedPurposeId,
           payTxn: payTxn,
         },
       })
@@ -117,14 +157,22 @@ const Sponsorship: React.FC<SponsorshipProps> = ({ openModal, closeModal, role, 
     }
     setLoading(true)
     try {
+      const parsedAppId = parseIdToBigInt(appId)
+      const parsedPurposeId = parseIdToBigInt(purposeId)
+      if (!parsedAppId || !parsedPurposeId) {
+        alert('Enter valid App ID and Purpose ID')
+        setLoading(false)
+        return
+      }
+
       const factory = new SponsorshipFactory({
         defaultSender: activeAddress ?? undefined,
         algorand: algorand,
       })
-      const appClient = factory.getAppClientById({ appId: BigInt(appId) })
+      const appClient = factory.getAppClientById({ appId: parsedAppId })
       const result = await appClient.send.submitProof({
         args: {
-          purposeId: BigInt(purposeId),
+          purposeId: parsedPurposeId,
           proofHash: proofHash,
         },
       })
@@ -146,12 +194,25 @@ const Sponsorship: React.FC<SponsorshipProps> = ({ openModal, closeModal, role, 
     }
     setLoading(true)
     try {
+      const parsedAppId = parseIdToBigInt(appId)
+      const parsedPurposeId = parseIdToBigInt(purposeId)
+      if (!parsedAppId || !parsedPurposeId) {
+        alert('Enter valid App ID and Purpose ID')
+        setLoading(false)
+        return
+      }
+      if (!algosdk.isValidAddress(receiverAddress.trim())) {
+        alert('Please enter a valid receiver address')
+        setLoading(false)
+        return
+      }
+
       const factory = new SponsorshipFactory({
         defaultSender: activeAddress ?? undefined,
         algorand: algorand,
       })
-      const appClient = factory.getAppClientById({ appId: BigInt(appId) })
-      const status = await appClient.state.box.purposeStatuses.value(BigInt(purposeId))
+      const appClient = factory.getAppClientById({ appId: parsedAppId })
+      const status = await appClient.state.box.purposeStatuses.value(parsedPurposeId)
       if (status !== 'proved') {
         alert('Proof not received, cannot release funds')
         setLoading(false)
@@ -159,8 +220,8 @@ const Sponsorship: React.FC<SponsorshipProps> = ({ openModal, closeModal, role, 
       }
       const result = await appClient.send.releaseFunds({
         args: {
-          purposeId: BigInt(purposeId),
-          receiver: receiverAddress,
+          purposeId: parsedPurposeId,
+          receiver: receiverAddress.trim(),
         },
       })
       alert(`Funds released successfully! Transaction ID: ${result.txIds[0]}`)
@@ -205,7 +266,7 @@ const Sponsorship: React.FC<SponsorshipProps> = ({ openModal, closeModal, role, 
               />
               <input
                 type="number"
-                placeholder="Target amount (microAlgos)"
+                placeholder="Target amount in ALGO (e.g., 0.1)"
                 className="input input-bordered mt-2"
                 value={targetAmount}
                 onChange={(e) => setTargetAmount(e.target.value)}
@@ -260,11 +321,11 @@ const Sponsorship: React.FC<SponsorshipProps> = ({ openModal, closeModal, role, 
                   onChange={(e) => setPurposeId(e.target.value)}
                 />
                 <label className="label mt-3">
-                  <span className="label-text font-medium">Funding Amount (microAlgos)</span>
+                  <span className="label-text font-medium">Funding Amount (ALGO)</span>
                 </label>
                 <input
                   type="number"
-                  placeholder="Amount to contribute"
+                  placeholder="Amount to contribute (e.g., 0.1)"
                   className="input input-bordered focus:ring-2 focus:ring-emerald-400 transition-all"
                   value={targetAmount}
                   onChange={(e) => setTargetAmount(e.target.value)}

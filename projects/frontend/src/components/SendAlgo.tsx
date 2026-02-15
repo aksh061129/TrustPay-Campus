@@ -1,5 +1,6 @@
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import * as algokit from '@algorandfoundation/algokit-utils'
+import algosdk from 'algosdk'
 import { useWallet } from '@txnlab/use-wallet-react'
 import { useSnackbar } from 'notistack'
 import { useMemo, useState } from 'react'
@@ -8,6 +9,29 @@ import { getAlgodConfigFromViteEnvironment } from '../utils/network/getAlgoClien
 interface SendAlgoProps {
   openModal: boolean
   closeModal: () => void
+}
+
+const MICROALGOS_PER_ALGO = 1_000_000
+
+function algoStringToMicroAlgos(amountStr: string): number | null {
+  const value = amountStr.trim()
+  if (!value) return null
+
+  // Allow only integer or up to 6 decimal places for ALGO.
+  if (!/^\d+(\.\d{1,6})?$/.test(value)) return null
+
+  const [wholePart, fractionalPart = ''] = value.split('.')
+  const whole = Number(wholePart)
+  if (!Number.isSafeInteger(whole)) return null
+
+  const fractionalPadded = (fractionalPart + '000000').slice(0, 6)
+  const fractional = Number(fractionalPadded)
+  if (!Number.isSafeInteger(fractional)) return null
+
+  const micro = whole * MICROALGOS_PER_ALGO + fractional
+  if (!Number.isSafeInteger(micro) || micro <= 0) return null
+
+  return micro
 }
 
 const SendAlgo = ({ openModal, closeModal }: SendAlgoProps) => {
@@ -24,17 +48,33 @@ const SendAlgo = ({ openModal, closeModal }: SendAlgoProps) => {
     return client
   }, [transactionSigner])
 
-  const onSend = async () => {
-    if (!activeAddress) return enqueueSnackbar('Connect a wallet first', { variant: 'error' })
-    const microAlgos = BigInt(Math.floor(Number(amount) * 1e6))
-    if (!to || microAlgos <= 0n) return enqueueSnackbar('Enter valid address and amount', { variant: 'error' })
+  const onSend = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault() // Important: prevent <form method="dialog"> auto closing
+
+    if (!activeAddress) {
+      enqueueSnackbar('Connect a wallet first', { variant: 'error' })
+      return
+    }
+
+    const receiver = to.trim()
+    const microAlgos = algoStringToMicroAlgos(amount)
+
+    if (!receiver || !algosdk.isValidAddress(receiver) || microAlgos === null) {
+      enqueueSnackbar('Enter valid address and amount', { variant: 'error' })
+      return
+    }
+
     setLoading(true)
     try {
-      await algorand.send.payment({ sender: activeAddress, receiver: to, amount: algokit.microAlgos(microAlgos) })
+      await algorand.send.payment({
+        sender: activeAddress,
+        receiver,
+        amount: algokit.microAlgos(microAlgos),
+      })
       enqueueSnackbar('Payment sent', { variant: 'success' })
       closeModal()
-    } catch (e) {
-      enqueueSnackbar((e as Error).message, { variant: 'error' })
+    } catch (err) {
+      enqueueSnackbar((err as Error).message ?? 'Transaction failed', { variant: 'error' })
     } finally {
       setLoading(false)
     }
@@ -44,13 +84,30 @@ const SendAlgo = ({ openModal, closeModal }: SendAlgoProps) => {
     <dialog id="send_algo_modal" className={`modal ${openModal ? 'modal-open' : ''}`}>
       <form method="dialog" className="modal-box">
         <h3 className="font-bold text-2xl mb-4">Send Algo</h3>
+
         <div className="flex flex-col gap-3">
-          <input className="input input-bordered" placeholder="Recipient address" value={to} onChange={(e) => setTo(e.target.value)} />
-          <input className="input input-bordered" placeholder="Amount (ALGO)" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <input
+            className="input input-bordered"
+            placeholder="Recipient address"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
+          <input
+            className="input input-bordered"
+            placeholder="Amount (ALGO)"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            inputMode="decimal"
+          />
         </div>
+
         <div className="modal-action">
-          <button className={`btn btn-primary ${loading ? 'loading' : ''}`} onClick={onSend} disabled={loading}>Send</button>
-          <button className="btn" onClick={closeModal} disabled={loading}>Close</button>
+          <button className={`btn btn-primary ${loading ? 'loading' : ''}`} onClick={onSend} disabled={loading}>
+            Send
+          </button>
+          <button className="btn" onClick={closeModal} disabled={loading}>
+            Close
+          </button>
         </div>
       </form>
     </dialog>
@@ -58,4 +115,3 @@ const SendAlgo = ({ openModal, closeModal }: SendAlgoProps) => {
 }
 
 export default SendAlgo
-
